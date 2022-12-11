@@ -932,6 +932,24 @@ struct ClipBox
     }
   }
 
+  bool get_extents (hb_glyph_extents_t *extents) const
+  {
+    switch (u.format) {
+    case 1:
+      printf ("hb: getting extents from a format 1 ClipBox\n");
+      extents->x_bearing = u.format1.xMin;
+      extents->y_bearing = u.format1.yMin;
+      extents->width = u.format1.xMax - u.format1.xMin;
+      extents->height = u.format1.yMax - u.format1.yMin;
+      return true;
+    case 2:
+      printf ("hb: getting extents from a format 2 ClipBox\n");
+    default:
+      printf ("hb: bad clipbox format %u ?!\n", u.format);
+      return false;
+    }
+  }
+
   protected:
   union {
   HBUINT8		format;         /* Format identifier */
@@ -955,6 +973,11 @@ struct ClipRecord
   {
     TRACE_SANITIZE (this);
     return_trace (c->check_struct (this) && clipBox.sanitize (c, base));
+  }
+
+  bool get_extents (hb_glyph_extents_t *extents) const
+  {
+    return (this+clipBox).get_extents (extents);
   }
 
   public:
@@ -1053,6 +1076,17 @@ struct ClipList
   {
     TRACE_SANITIZE (this);
     return_trace (c->check_struct (this) && clips.sanitize (c, this));
+  }
+
+  const ClipRecord&  get_clip_record (hb_codepoint_t gid) const
+  {
+    for (const ClipRecord& record : clips.iter ())
+    {
+      if (record.startGlyphID <= gid && gid <= record.endGlyphID)
+        return record;
+    }
+    printf ("no clip record for %u\n", gid);
+    return Null(ClipRecord);
   }
 
   HBUINT8			format;  // Set to 1.
@@ -1425,6 +1459,14 @@ struct COLR
     return record;
   }
 
+  const ClipRecord* get_clip_record (hb_codepoint_t gid) const
+  {
+    const ClipRecord* record = &(this+clipList).get_clip_record (gid);
+    if (record == &Null (ClipRecord))
+      record = nullptr;
+    return record;
+  }
+
   bool subset (hb_subset_context_t *c) const
   {
     TRACE_SUBSET (this);
@@ -1514,6 +1556,16 @@ struct COLR
     colr_prime->varIdxMap.serialize_copy (c->serializer, varIdxMap, this);
     //TODO: subset varStore once it's implemented in fonttools
     return_trace (true);
+  }
+
+  bool
+  get_extents (hb_font_t *font, hb_codepoint_t glyph, hb_glyph_extents_t *extents) const
+  {
+    const ClipRecord *record = get_clip_record (glyph);
+    printf ("hb: COLR::get_extents %p\n", record);
+    if (!record)
+      return false;
+    return record->get_extents (extents);
   }
 
   protected:
