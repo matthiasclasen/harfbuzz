@@ -43,18 +43,38 @@ hb_face_descriptor_create ();
 void
 hb_face_descriptor_destroy (hb_face_descriptor_t *desc);
 
-/* FIXME */
 const char *
-hb_face_descriptor_get_field (hb_face_descriptor_t *desc,
-                              const char           *field);
+hb_face_descriptor_get_name (hb_face_descriptor_t *desc,
+                             hb_ot_name_id_t       name);
 
 void
-hb_face_descriptor_add_field (hb_face_descriptor_t *desc,
-                              const char           *field,
-                              const char           *value);
+hb_face_descriptor_add_name (hb_face_descriptor_t *desc,
+                             hb_ot_name_id_t       name,
+                             const char           *value);
+
+float
+hb_face_descriptor_get_style (hb_face_descriptor_t *desc,
+                              hb_tag_t              style);
+
+void
+hb_face_descriptor_add_style (hb_face_descriptor_t *desc,
+                              hb_tag_t              style,
+                              float                 value);
+
+void
+hb_face_descriptor_add_script (hb_face_descriptor_t *desc,
+                               hb_script_t           script);
+
+void
+hb_face_descriptor_add_language (hb_face_descriptor_t *desc,
+                                 hb_language_t         language);
 
 hb_face_descriptor_t *
 hb_face_describe (hb_face_t *face);
+
+int
+hb_face_descriptor_match (hb_face_descriptor_t *descriptor,
+                          hb_face_t            *face);
 
 /* hb_face_collection_t */
 
@@ -64,18 +84,22 @@ hb_face_collection_t *
 hb_face_collection_create ();
 
 void
-hb_face_collection_add_faces_from_directory (hb_face_collection_t *collection,
-                                             const char           *path);
+hb_face_collection_add_from_path (hb_face_collection_t *collection,
+                                  const char           *path);
 
 void
 hb_face_collection_add_face (hb_face_collection_t *collection,
                              hb_face_t            *face);
 
+static hb_face_collection_t *
+hb_face_collection_filter (hb_face_collection_t *collection,
+                           hb_face_descriptor_t *desc);
+
 unsigned int
-hb_face_collection_match (hb_face_collection_t *collection,
-                          hb_face_descriptor_t *desc,
-                          unsigned int         *len,
-                          hb_face_t            *faces);
+hb_face_collection_get_faces (hb_face_collection_t *collection,
+                              hb_face_descriptor_t *desc,
+                              unsigned int         *len,
+                              hb_face_t            *faces);
 
 HB_END_DECLS
 
